@@ -1,36 +1,132 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Malla Medicina UNITEC</title>
+  <meta charset="UTF-8" />
+  <title>Malla interactiva – Medicina UNITEC</title>
+
+  <!-- 1️⃣  Estilos básicos (puedes cambiar colores a tu gusto) -->
   <style>
-    table { border-collapse: collapse; width: 100%; }
-    td, th { border: 1px solid gray; padding: 8px; text-align: center; }
-    .lab { background-color: #e0f7fa; } /* Materias con laboratorio */
+    body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;padding:0;background:#f5f7fa}
+    header{background:#00529C;color:#fff;padding:1.2rem 1rem}
+    h1{margin:0;font-size:1.6rem}
+    main{padding:1rem;max-width:1150px;margin:auto}
+    #filtros{margin-bottom:.8rem;display:flex;gap:.5rem;flex-wrap:wrap}
+    select,input{padding:.4rem .6rem;border:1px solid #ccc;border-radius:4px;font-size:.95rem}
+    table{width:100%;border-collapse:collapse;background:#fff}
+    th,td{padding:.55rem .45rem;border-bottom:1px solid #ddd;text-align:center;font-size:.9rem}
+    th{background:#e5eef9;font-weight:600}
+    tr:hover{background:#f1f8ff}
+    .lab{background:#e0fff5}         /* materias con laboratorio */
+    .hp::after{content:" HP";font-size:.8em;color:#555} /* horas práctica */
+    @media(max-width:700px){th:nth-child(5),td:nth-child(5){display:none}}
   </style>
 </head>
 <body>
-  <h1>Malla Curricular de Medicina y Cirugía UNITEC</h1>
-  <table>
-    <tr>
-      <th>Período</th>
-      <th>Código</th>
-      <th>Asignatura</th>
-      <th>Créditos</th>
-    </tr>
-    <tr>
-      <td>I</td>
-      <td>MDE111</td>
-      <td class="lab">Estructura y Función I</td>
-      <td>4</td>
-    </tr>
-    <tr>
-      <td>I</td>
-      <td>MAT101</td>
-      <td>Introducción al Álgebra</td>
-      <td>4</td>
-    </tr>
-    <!-- Agrega más materias aquí -->
+<header>
+  <h1>Malla Curricular Interactiva – Medicina y Cirugía UNITEC</h1>
+</header>
+
+<main>
+  <!-- 2️⃣ Filtros de búsqueda  -->
+  <div id="filtros">
+    <label>Período:
+      <select id="periodoFiltro">
+        <option value="">Todos</option>
+      </select>
+    </label>
+
+    <label>Buscar materia:
+      <input id="buscador" type="search" placeholder="Ej. Fisiología">
+    </label>
+  </div>
+
+  <!-- 3️⃣ Tabla donde se mostrará la malla -->
+  <table id="tablaMalla">
+    <thead>
+      <tr>
+        <th>Período</th>
+        <th>Código</th>
+        <th>Asignatura</th>
+        <th>Créditos</th>
+        <th>Tipo</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
   </table>
+</main>
+
+<!-- 4️⃣  Datos de la malla (podrías cargarlos desde un JSON externo) -->
+<script>
+const malla = [
+  /* === PRIMER AÑO === */
+  {periodo:"I", codigo:"MDE111", nombre:"Estructura y Función I", creditos:4, tipo:"Lab"},
+  {periodo:"I", codigo:"MAT101", nombre:"Introducción al Álgebra", creditos:4, tipo:"Teórica"},
+  {periodo:"I", codigo:"MDE110", nombre:"Procesos Celulares y Moleculares I", creditos:3, tipo:"Teórica"},
+  {periodo:"I", codigo:"MDE109", nombre:"Desarrollo Humano y Social", creditos:4, tipo:"Teórica"},
+  {periodo:"I", codigo:"ING105", nombre:"Inglés I", creditos:3, tipo:"Teórica"},
+
+  {periodo:"II", codigo:"MDE114", nombre:"Estructura y Función II", creditos:4, tipo:"Lab"},
+  {periodo:"II", codigo:"MAT102", nombre:"Álgebra", creditos:4, tipo:"Teórica"},
+  {periodo:"II", codigo:"MDE112", nombre:"Estilo de Vida, Salud y Medio Ambiente", creditos:4, tipo:"Teórica"},
+  {periodo:"II", codigo:"MDE113", nombre:"Procesos Celulares y Moleculares II", creditos:3, tipo:"Teórica"},
+  {periodo:"II", codigo:"ESP103", nombre:"Comunicación Oral y Escrita", creditos:4, tipo:"Teórica"},
+
+  /* … 👉🏼 Añade aquí el resto de materias de tu PDF …
+     Solo sigue el mismo formato, una línea por asignatura.
+     Puedes incluir las de los años clínicos, internados y servicio social. */
+
+  /* === EJEMPLO DE AÑOS CLÍNICOS === */
+  {periodo:"XVI", codigo:"MDE407", nombre:"Medicina Interna I", creditos:5, tipo:"Clínica"},
+  {periodo:"XVI", codigo:"MDE409", nombre:"Cirugía I", creditos:5, tipo:"Clínica"},
+  {periodo:"XVI", codigo:"MDE411", nombre:"Urgencias y Emergencias I", creditos:5, tipo:"Clínica"},
+];
+
+</script>
+
+<!-- 5️⃣  Lógica JS para filtrar, buscar y construir la tabla -->
+<script>
+const cuerpoTabla = document.querySelector("#tablaMalla tbody");
+const periodoFiltro = document.getElementById("periodoFiltro");
+const buscador = document.getElementById("buscador");
+
+/* ➊ Poblar select de períodos automáticamente */
+const periodosUnicos = [...new Set(malla.map(m=>m.periodo))].sort(
+  (a,b)=>a.localeCompare(b,undefined,{numeric:true})
+);
+periodosUnicos.forEach(p=>{
+  const opt=document.createElement("option");
+  opt.value=p; opt.textContent=p; periodoFiltro.appendChild(opt);
+});
+
+/* ➋ Función para refrescar la tabla según filtros */
+function renderTabla(){
+  const texto = buscador.value.toLowerCase();
+  const per = periodoFiltro.value;
+  cuerpoTabla.innerHTML = "";  // limpiar
+
+  malla
+    .filter(m => (!per || m.periodo===per))
+    .filter(m => m.nombre.toLowerCase().includes(texto) || m.codigo.toLowerCase().includes(texto))
+    .forEach(m=>{
+      const tr=document.createElement("tr");
+      if(m.tipo.toLowerCase().includes("lab")) tr.classList.add("lab");
+      tr.innerHTML=`
+        <td>${m.periodo}</td>
+        <td>${m.codigo}</td>
+        <td>${m.nombre}</td>
+        <td>${m.creditos}</td>
+        <td>${m.tipo}</td>`;
+      cuerpoTabla.appendChild(tr);
+    });
+}
+
+/* ➌ Escuchar cambios en filtros */
+periodoFiltro.addEventListener("change",renderTabla);
+buscador.addEventListener("input",renderTabla);
+
+/* ➍ Render inicial */
+renderTabla();
+</script>
 </body>
 </html>
+
